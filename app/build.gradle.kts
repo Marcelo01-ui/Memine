@@ -8,7 +8,7 @@ plugins {
 
 android {
     namespace = "com.example.lasttime"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.example.lasttime"
