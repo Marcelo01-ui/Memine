@@ -7,6 +7,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.lasttime.LastTimeApplication
 import com.example.lasttime.presentation.addactivity.AddActivityViewModel
+import com.example.lasttime.presentation.calendar.CalendarViewModel
 import com.example.lasttime.presentation.history.HistoryViewModel
 import com.example.lasttime.presentation.home.HomeViewModel
 
@@ -25,6 +26,10 @@ object AppViewModelProvider {
         initializer {
             val container = lastTimeApplication().container
             HomeViewModel(container.activityRepository, container.calendarRepository)
+        }
+        initializer {
+            val container = lastTimeApplication().container
+            CalendarViewModel(container.calendarRepository)
         }
     }
 }
