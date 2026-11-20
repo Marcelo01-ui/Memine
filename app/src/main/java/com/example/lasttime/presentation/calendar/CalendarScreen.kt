@@ -1,8 +1,7 @@
 package com.example.lasttime.presentation.calendar
 
+import android.widget.CalendarView
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -12,10 +11,16 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -25,27 +30,34 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
+import com.example.lasttime.presentation.components.toBr
 import com.example.lasttime.ui.theme.AppBackground
 import com.example.lasttime.ui.theme.DarkText
 import com.example.lasttime.ui.theme.GrayText
-import java.time.DayOfWeek
+import com.example.lasttime.ui.theme.PrimaryNavy
 import java.time.LocalDate
-import java.time.YearMonth
-import java.time.format.TextStyle
-import java.util.Locale
 
+/**
+ * Tela do Calendário integrando o componente nativo CalendarView do Android Studio (android.widget.CalendarView).
+ *
+ * Ao selecionar uma data no bloquinho do calendário, um botão "Adicionar Atividade Nesta Data" é exibido,
+ * permitindo abrir o formulário já com a data pré-selecionada.
+ *
+ * @param onDayClick Callback acionado ao tocar em uma data do calendário.
+ * @param onAddActivityForDate Callback para abrir o modal de nova atividade injetando a data selecionada.
+ */
 @Composable
 fun CalendarScreen(
     modifier: Modifier = Modifier,
-    onDayClick: (LocalDate) -> Unit = {}
+    onDayClick: (LocalDate) -> Unit = {},
+    onAddActivityForDate: (LocalDate) -> Unit = {}
 ) {
-    // Começamos em Outubro de 2026 para corresponder exatamente ao print do usuário
-    var currentYearMonth by remember { mutableStateOf(YearMonth.of(2026, 10)) }
+    // Guarda a data selecionada no CalendarView
     var selectedDate by remember { mutableStateOf<LocalDate?>(null) }
 
     Box(
@@ -61,7 +73,7 @@ fun CalendarScreen(
                 .fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Card do Calendário
+            // Card contendo o CalendarView nativo do Android Studio
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(8.dp),
@@ -71,134 +83,100 @@ fun CalendarScreen(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp)
+                        .padding(8.dp)
                 ) {
-                    // Header: - Mês Ano +
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                    // Renderiza o CalendarView nativo do Android Studio no Jetpack Compose
+                    AndroidView(
+                        factory = { context ->
+                            CalendarView(context).apply {
+                                setOnDateChangeListener { _, year, month, dayOfMonth ->
+                                    val date = LocalDate.of(year, month + 1, dayOfMonth)
+                                    selectedDate = date
+                                    onDayClick(date)
+                                }
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(16.dp))
+
+            // Exibição da data selecionada e botão de adicionar atividade
+            if (selectedDate != null) {
+                val date = selectedDate!!
+
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(8.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp)
                     ) {
                         Text(
-                            text = "–",
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Light,
-                            color = DarkText,
-                            modifier = Modifier
-                                .clickable {
-                                    currentYearMonth = currentYearMonth.minusMonths(1)
-                                }
-                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                            text = "Data Selecionada no Calendário:",
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = PrimaryNavy
                         )
-
-                        val monthName = currentYearMonth.month.getDisplayName(TextStyle.FULL, Locale.ENGLISH)
+                        Spacer(Modifier.height(4.dp))
                         Text(
-                            text = "$monthName ${currentYearMonth.year}",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Normal,
-                            color = DarkText,
-                            fontFamily = FontFamily.Serif
+                            text = date.toBr(),
+                            fontSize = 17.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = DarkText
                         )
 
-                        Text(
-                            text = "+",
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Light,
-                            color = DarkText,
-                            modifier = Modifier
-                                .clickable {
-                                    currentYearMonth = currentYearMonth.plusMonths(1)
-                                }
-                                .padding(horizontal = 8.dp, vertical = 4.dp)
-                        )
-                    }
+                        Spacer(Modifier.height(12.dp))
 
-                    Spacer(Modifier.height(16.dp))
-
-                    // Dias da Semana: Sun Mon Tue Wed Thu Fri Sat
-                    val daysOfWeek = listOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        daysOfWeek.forEach { dayName ->
-                            Text(
-                                text = dayName,
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Normal,
-                                color = DarkText,
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier.weight(1f)
-                            )
-                        }
-                    }
-
-                    Spacer(Modifier.height(14.dp))
-
-                    // Grid dos Dias do Mês
-                    val firstDayOfMonth = currentYearMonth.atDay(1)
-                    val daysInMonth = currentYearMonth.lengthOfMonth()
-                    // Java Time DayOfWeek: Monday is 1, Sunday is 7. No grid (Sun = 0, Mon = 1, ..., Sat = 6)
-                    val firstDayOfWeekIndex = (firstDayOfMonth.dayOfWeek.value % 7)
-
-                    val totalCells = ((firstDayOfWeekIndex + daysInMonth + 6) / 7) * 7
-
-                    for (weekIndex in 0 until (totalCells / 7)) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 8.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween
+                        // Botão para adicionar atividade já com esta data injetada
+                        Button(
+                            onClick = { onAddActivityForDate(date) },
+                            colors = ButtonDefaults.buttonColors(containerColor = PrimaryNavy),
+                            shape = RoundedCornerShape(4.dp),
+                            modifier = Modifier.fillMaxWidth()
                         ) {
-                            for (dayCol in 0..6) {
-                                val cellIndex = weekIndex * 7 + dayCol
-                                val dayNumber = cellIndex - firstDayOfWeekIndex + 1
-
-                                if (dayNumber in 1..daysInMonth) {
-                                    val date = currentYearMonth.atDay(dayNumber)
-                                    val isSelected = selectedDate == date
-
-                                    Box(
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .clickable {
-                                                selectedDate = date
-                                                onDayClick(date)
-                                            },
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Text(
-                                            text = dayNumber.toString(),
-                                            fontSize = 15.sp,
-                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                            color = DarkText,
-                                            textAlign = TextAlign.Center
-                                        )
-                                    }
-                                } else {
-                                    Box(modifier = Modifier.weight(1f))
-                                }
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Add,
+                                    contentDescription = "Adicionar Atividade",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(Modifier.width(6.dp))
+                                Text(
+                                    text = "Adicionar Atividade Nesta Data",
+                                    color = Color.White,
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
                             }
                         }
                     }
                 }
-            }
-
-            // Espaço central: "Clique em + para adicionar uma nova atividade"
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "Clique em + para adicionar\numa nova atividade",
-                    color = GrayText,
-                    fontSize = 19.sp,
-                    lineHeight = 26.sp,
-                    textAlign = TextAlign.Center,
-                    fontWeight = FontWeight.Normal
-                )
+            } else {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "Selecione uma data no Calendário\npara adicionar uma atividade",
+                        color = GrayText,
+                        fontSize = 18.sp,
+                        lineHeight = 26.sp,
+                        textAlign = TextAlign.Center,
+                        fontWeight = FontWeight.Normal
+                    )
+                }
             }
         }
     }
